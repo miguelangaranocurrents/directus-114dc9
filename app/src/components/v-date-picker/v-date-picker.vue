@@ -55,10 +55,15 @@ function getWeekStartsOn(): 0 | 1 | 2 | 3 | 4 | 5 | 6 {
 	return getDateFNSLocale()?.options?.weekStartsOn ?? 0;
 }
 
-/** Abbreviated weekday names in the user's language, starting on the first day of the week. */
+/**
+ * Abbreviated weekday names in the user's language, starting on the first day of the week.
+ * Some locales end their abbreviations with a period (“Mo.”), which doesn't belong in a calendar header.
+ */
 function getWeekDays(): string[] {
 	const weekStart = startOfWeek(new Date(), { weekStartsOn: getWeekStartsOn() });
-	return Array.from({ length: 7 }, (_, index) => localizedFormat(addDays(weekStart, index), 'EEE'));
+	return Array.from({ length: 7 }, (_, index) =>
+		localizedFormat(addDays(weekStart, index), 'EEE').replace(/\.$/, ''),
+	);
 }
 
 const {
