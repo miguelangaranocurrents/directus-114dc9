@@ -332,7 +332,10 @@ function useFileUpload() {
 			notificationsStore.remove(dragNotificationID);
 		}
 
-		const files = Array.from(event.dataTransfer.files).filter((file) => file.type);
+		// Keep files without a MIME type too; only skip folders, which have no content to upload
+		const files = Array.from(event.dataTransfer.items)
+			.filter((item) => item.kind === 'file' && item.webkitGetAsEntry()?.isDirectory !== true)
+			.flatMap((item) => item.getAsFile() ?? []);
 
 		fileUploadNotificationID = notificationsStore.add({
 			title: t(

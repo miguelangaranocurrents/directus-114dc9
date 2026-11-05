@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CalendarDate, DateFormatter, DateValue } from '@internationalized/date';
+import { addDays, startOfWeek } from 'date-fns';
 import {
 	CalendarCell,
 	CalendarCellTrigger,
@@ -22,6 +23,8 @@ import VIcon from '@/components/v-icon/v-icon.vue';
 import VInput from '@/components/v-input.vue';
 import VSelect from '@/components/v-select/v-select.vue';
 import { useUserStore } from '@/stores/user';
+import { getDateFNSLocale } from '@/utils/get-date-fns-locale';
+import { localizedFormat } from '@/utils/localized-format';
 
 interface Props {
 	type: 'date' | 'time' | 'dateTime' | 'timestamp';
@@ -46,6 +49,17 @@ const emit = defineEmits<{
 const userStore = useUserStore();
 
 const isRTL = computed(() => userStore.textDirection === 'rtl');
+
+/** First day of the week for the user's language (0 = Sunday, 1 = Monday, ...). */
+function getWeekStartsOn(): 0 | 1 | 2 | 3 | 4 | 5 | 6 {
+	return getDateFNSLocale()?.options?.weekStartsOn ?? 0;
+}
+
+/** Abbreviated weekday names in the user's language, starting on the first day of the week. */
+function getWeekDays(): string[] {
+	const weekStart = startOfWeek(new Date(), { weekStartsOn: getWeekStartsOn() });
+	return Array.from({ length: 7 }, (_, index) => localizedFormat(addDays(weekStart, index), 'EEE'));
+}
 
 const {
 	calendarValue,
@@ -151,12 +165,14 @@ function setToNow() {
 <template>
 	<div class="v-date-picker">
 		<CalendarRoot
-			v-slot="{ weekDays, grid, date }"
+			v-slot="{ grid, date }"
 			:model-value="calendarValue"
 			:disabled="disabled"
 			class="calendar"
 			fixed-weeks
 			weekday-format="short"
+			:locale="userStore.language"
+			:week-starts-on="getWeekStartsOn()"
 			:dir="isRTL ? 'rtl' : 'ltr'"
 			@update:model-value="handleDateChange"
 		>
@@ -194,7 +210,7 @@ function setToNow() {
 					<CalendarGrid v-for="month in grid" :key="month.value.toString()" class="calendar-grid">
 						<CalendarGridHead class="calendar-grid-head">
 							<CalendarGridRow class="calendar-grid-row">
-								<CalendarHeadCell v-for="day in weekDays" :key="day" class="calendar-head-cell">
+								<CalendarHeadCell v-for="day in getWeekDays()" :key="day" class="calendar-head-cell">
 									{{ day }}
 								</CalendarHeadCell>
 							</CalendarGridRow>
